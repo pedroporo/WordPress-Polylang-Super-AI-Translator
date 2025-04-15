@@ -12,7 +12,7 @@ class SPT_Core {
     public function register_settings() {
         register_setting('spt_settings', 'spt_openai_api_key');
         register_setting('spt_settings', 'spt_translation_model', array(
-            'default' => 'gpt-4'
+            'default' => 'gpt-4o'
         ));
         register_setting('spt_settings', 'spt_auto_translate', array(
             'type' => 'boolean',

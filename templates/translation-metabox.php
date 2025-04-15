@@ -89,8 +89,8 @@ $current_lang_name = isset($language_map[$current_lang]) ? $language_map[$curren
                 <?php _e('GPT-3.5 Turbo', 'super-ai-polylang-translator'); ?>
             </label>
             <label class="spt-model-option">
-                <input type="radio" name="spt_model" value="gpt-4">
-                <?php _e('GPT-4', 'super-ai-polylang-translator'); ?>
+                <input type="radio" name="spt_model" value="gpt-4o">
+                <?php _e('GPT-4o', 'super-ai-polylang-translator'); ?>
             </label>
         </div>
 
@@ -100,7 +100,7 @@ $current_lang_name = isset($language_map[$current_lang]) ? $language_map[$curren
                 <?php foreach ($language_locales as $lang): ?>
                     <?php if ($lang === $current_lang || isset($translations[substr($lang, 0, 2)])) continue; ?>
                     <label class="spt-language-option">
-                        <input type="checkbox" name="spt_target_languages[]" value="<?php echo esc_attr($lang); ?>">
+                        <input type="checkbox" name="spt_target_languages[]" value="<?php echo esc_attr($lang); ?>" checked>
                         <?php echo esc_html($language_map[$lang]); ?>
                     </label>
                 <?php endforeach; ?>

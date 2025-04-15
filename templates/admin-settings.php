@@ -36,8 +36,8 @@ if (!defined('ABSPATH')) {
                 </th>
                 <td>
                     <select id="spt_translation_model" name="spt_translation_model">
-                        <option value="gpt-4" <?php selected(get_option('spt_translation_model'), 'gpt-4'); ?>>
-                            GPT-4 (<?php _e('Recommended', 'super-ai-polylang-translator'); ?>)
+                        <option value="gpt-4o" <?php selected(get_option('spt_translation_model'), 'gpt-4o'); ?>>
+                            gpt-4o (<?php _e('Recommended', 'super-ai-polylang-translator'); ?>)
                         </option>
                         <option value="gpt-3.5-turbo" <?php selected(get_option('spt_translation_model'), 'gpt-3.5-turbo'); ?>>
                             GPT-3.5 Turbo

@@ -80,7 +80,7 @@ class SPT_Admin {
         $target_languages = isset($_POST['target_languages']) ? (array)$_POST['target_languages'] : array();
         $model = isset($_POST['model']) ? sanitize_text_field($_POST['model']) : 'gpt-3.5-turbo';
 
-        if (!in_array($model, array('gpt-3.5-turbo', 'gpt-4'))) {
+        if (!in_array($model, array('gpt-3.5-turbo', 'gpt-4o'))) {
             wp_send_json_error(array(
                 'message' => 'Invalid model selected',
                 'results' => array()

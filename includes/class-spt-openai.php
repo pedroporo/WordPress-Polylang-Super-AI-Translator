@@ -9,24 +9,24 @@ class SPT_OpenAI {
     // Rate limits per minute
     private $rate_limits = array(
         'gpt-3.5-turbo' => 3500,
-        'gpt-4' => 200
+        'gpt-4o' => 200
     );
     
     // Token limits with safety margins
     private $max_tokens_map = array(
         'gpt-3.5-turbo' => array(
             'input' => 2500,    // Reduced for safety
-            'output' => 1500,   // Reserved for response
+            'output' => 4096,   // Reserved for response
             'total' => 4096     // Total context window
         ),
-        'gpt-4' => array(
+        'gpt-4o' => array(
             'input' => 5000,    // Reduced for safety
             'output' => 3000,   // Reserved for response
             'total' => 8192     // Total context window
         )
     );
 
-    private $chunk_size = 1500; // Reduced chunk size for better reliability
+    private $chunk_size = 4096; // Reduced chunk size for better reliability
 
     public function __construct() {
         $this->api_key = get_option('spt_openai_api_key');
@@ -60,7 +60,9 @@ class SPT_OpenAI {
             if ($text_length > $this->chunk_size && !$is_chunk) {
                 return $this->translate_long_text($text, $target_language, $model);
             }
-            
+            /*if ($is_chunk) {
+                error_log("✅ Traducción recibida para el chunk: " . $this->truncate_for_log($result));
+            }*/
             $target_name = $this->get_language_name($target_language);
             return $this->make_translation_request($text, $target_name, $model);
 
@@ -110,6 +112,7 @@ class SPT_OpenAI {
 
                 $response_code = wp_remote_retrieve_response_code($response);
                 $body = json_decode(wp_remote_retrieve_body($response), true);
+                error_log('SPT OpenAI Raw Response: ' . print_r($body, true));
 
                 if ($response_code === 200 && !empty($body['choices'][0]['message']['content'])) {
                     error_log('SPT OpenAI: Se ha traducido correctamente');
@@ -141,6 +144,7 @@ class SPT_OpenAI {
 
     private function translate_long_text($text, $target_language, $model) {
         $chunks = $this->smart_text_split($text);
+        $this->debug_log_chunks($chunks, 'Antes de traducir');
         $translated_chunks = array();
         
         error_log(sprintf('SPT OpenAI: Starting chunked translation with %d chunks', count($chunks)));
@@ -151,10 +155,14 @@ class SPT_OpenAI {
                 count($chunks),
                 mb_strlen($chunk)
             ));
-            error_log("SPT OpenAI: Verificando longitud del chunk antes de enviar a translate_text(): " . mb_strlen($chunk));
+            //error_log("SPT OpenAI: Verificando longitud del chunk antes de enviar a translate_text(): " . mb_strlen($chunk));
             $result = $this->translate_text($chunk, $target_language, $model,true);
             if (is_wp_error($result)) {
                 return $result;
+            }
+            if (empty($result) || trim($result) === '') {
+                error_log("SPT OpenAI: Chunk $index devolvió una respuesta vacía.");
+                return new WP_Error('empty_response', "Chunk $index no se pudo traducir correctamente.");
             }
             
             $translated_chunks[] = $result;
@@ -173,7 +181,7 @@ class SPT_OpenAI {
     
     private function smart_text_split($text) {
         if (stripos($text, '</p>') !== false) {
-            $paragraphs = preg_split('/<\/p>/', $text);
+            $paragraphs = preg_split('/(<\/div>|<\/p>|<br\s*\/?>|\n\s*\n)/i', $text, -1, PREG_SPLIT_NO_EMPTY);
         } else {
             $paragraphs = preg_split('/\n\s*\n/', $text);
         }
@@ -194,14 +202,14 @@ class SPT_OpenAI {
         foreach ($paragraphs as $paragraph) {
             $paragraph = trim($paragraph);
             if (empty($paragraph)) continue;
-    
+            $paragraph .= '</div>';
             if (mb_strlen($current_chunk . $paragraph) > $this->chunk_size) {
                 if (!empty($current_chunk)) {
                     $chunks[] = $current_chunk;
                 }
-                $current_chunk = $paragraph . '</p>';
+                $current_chunk = $paragraph;
             } else {
-                $current_chunk .= $paragraph . '</p>';
+                $current_chunk .= $paragraph;
             }
         }
     
@@ -211,7 +219,20 @@ class SPT_OpenAI {
         
         return $chunks;
     }
-
+    private function debug_log_chunks($chunks, $context = 'Default') {
+        error_log("🔍 SPT OpenAI - DEBUG DE CHUNKS ($context)");
+        foreach ($chunks as $index => $chunk) {
+            $length = mb_strlen($chunk);
+            error_log("🧩 Chunk #$index (Longitud: $length):\n" . $this->truncate_for_log($chunk));
+        }
+    }
+    private function truncate_for_log($text, $max_length = 1000) {
+        if (mb_strlen($text) <= $max_length) {
+            return $text;
+        }
+        return mb_substr($text, 0, $max_length) . "\n[...contenido truncado...]";
+    }
+    
     private function get_language_name($language_code) {
         $language_map = array(
             'en' => 'English',
